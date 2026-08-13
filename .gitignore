@@ -1,0 +1,11 @@
+# Ignore Python Virtual Environment
+backend/venv/
+backend/__pycache__/
+*.pyc
+
+# Ignore Node Modules (Frontend Packages)
+frontend/node_modules/
+frontend/dist/
+
+# Ignore Environment Files (Secrets & Passwords)
+.env
