@@ -1,7 +1,7 @@
-from sqlalchemy import String, Integer, Text, Date, Float
+from sqlalchemy import String, Integer, Text, Date, Float, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import date
-from typing import Optional, List
+from typing import Optional, List, Any
 from app.db.base import Base
 from app.models.associations import content_genres
 
@@ -21,6 +21,9 @@ class Content(Base):
     backdrop_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
     imdb_rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True, index=True)
+    
+    # Stores platform availability (e.g., Netflix, Prime, Hotstar) and direct watch links
+    watch_providers: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)
 
     # Relationships
     genres = relationship("Genre", secondary=content_genres, back_populates="contents")
