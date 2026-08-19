@@ -1,11 +1,13 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.pool import NullPool
 from app.core.config import settings
 
 # Create Async Engine for high-performance database communication
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=True, # Logs generated SQL queries in terminal (great for debugging)
-    future=True
+    future=True,
+    poolclass = NullPool
 )
 
 # Factory for creating async database sessions
