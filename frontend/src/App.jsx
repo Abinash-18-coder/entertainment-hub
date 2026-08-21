@@ -6,13 +6,13 @@ import UpcomingPage from './pages/UpcomingPage';
 import GenresPage from './pages/GenresPage';
 import LeaderboardsPage from './pages/LeaderboardsPage';
 import LibraryPage from './pages/LibraryPage';
+import DetailPage from './pages/DetailPage';
 
-// Initialize TanStack React Query Client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false, // Prevents excessive backend queries
-      retry: 1, // Retry failed queries once before showing error UI
+      refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 });
@@ -28,6 +28,8 @@ function App() {
             <Route path="genres" element={<GenresPage />} />
             <Route path="leaderboards" element={<LeaderboardsPage />} />
             <Route path="library" element={<LibraryPage />} />
+            {/* Dynamic Content Detail Route */}
+            <Route path="content/:id" element={<DetailPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
