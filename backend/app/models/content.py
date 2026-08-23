@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import date
 from typing import Optional, List, Any
 from app.db.base import Base
-from app.models.associations import content_genres
+from app.models.associations import content_genres, user_bookmarks, user_watched
 
 class Content(Base):
     __tablename__ = "contents"
@@ -14,17 +14,18 @@ class Content(Base):
     
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     overview: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    content_type: Mapped[str] = mapped_column(String(20), nullable=False) # "movie" or "series"
+    content_type: Mapped[str] = mapped_column(String(20), nullable=False)
     
     release_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
     poster_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     backdrop_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
     imdb_rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True, index=True)
-    
-    # Stores platform availability (e.g., Netflix, Prime, Hotstar) and direct watch links
     watch_providers: Mapped[Optional[Any]] = mapped_column(JSON, nullable=True)
 
     # Relationships
     genres = relationship("Genre", secondary=content_genres, back_populates="contents")
     cast_credits = relationship("CastCredit", back_populates="content", cascade="all, delete-orphan")
+    
+    bookmarked_by_users = relationship("User", secondary=user_bookmarks, back_populates="bookmarked_contents")
+    watched_by_users = relationship("User", secondary=user_watched, back_populates="watched_contents")

@@ -1,7 +1,9 @@
 from sqlalchemy import String, Integer, Boolean, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
+from typing import List
 from app.db.base import Base
+from app.models.associations import user_bookmarks, user_watched
 
 class User(Base):
     __tablename__ = "users"
@@ -11,3 +13,17 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Relationships to saved titles
+    bookmarked_contents = relationship(
+        "Content",
+        secondary=user_bookmarks,
+        back_populates="bookmarked_by_users",
+        lazy="selectin"
+    )
+    watched_contents = relationship(
+        "Content",
+        secondary=user_watched,
+        back_populates="watched_by_users",
+        lazy="selectin"
+    )

@@ -4,6 +4,7 @@ import { fetchContentDetail } from '../api/contents';
 import ImageWithFallback from '../components/ui/ImageWithFallback';
 import WatchProviders from '../components/detail/WatchProviders';
 import CastGrid from '../components/detail/CastGrid';
+import LibraryActionButtons from '../components/detail/LibraryActionButtons';
 import DetailSkeleton from '../components/detail/DetailSkeleton';
 import ErrorState from '../components/ui/ErrorState';
 import { Star, Calendar, Film, Tv, ArrowLeft, Share2 } from 'lucide-react';
@@ -143,6 +144,11 @@ export default function DetailPage() {
               <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-3xl">
                 {overview || 'No synopsis description provided for this title.'}
               </p>
+            </div>
+
+            {/* Interactive User Library Action Buttons */}
+            <div className="pt-2">
+              <LibraryActionButtons contentId={id} />
             </div>
           </div>
         </div>
