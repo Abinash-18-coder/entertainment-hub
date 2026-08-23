@@ -1,7 +1,8 @@
 import pytest
+import uuid
 
-TEST_USER_EMAIL = "library_tester@cineverse.com"
-TEST_USER_PASSWORD = "Password123!"
+TEST_USER_EMAIL = f"library_tester_{uuid.uuid4().hex}@cineverse.com"
+TEST_USER_PASSWORD = "Password123456"
 
 @pytest.mark.asyncio
 async def test_library_bookmark_and_watched_flow(client):

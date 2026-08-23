@@ -4,6 +4,7 @@ import { fetchContents } from '../api/contents';
 import MovieCard from '../components/ui/MovieCard';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import ErrorState from '../components/ui/ErrorState';
+import RecommendationsRow from '../components/recommendations/RecommendationsRow';
 import { Flame, Film, Tv, Sparkles } from 'lucide-react';
 
 export default function HomePage() {
@@ -12,12 +13,13 @@ export default function HomePage() {
   // React Query Fetcher Hook
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['contents', 'featured', selectedType],
-    queryFn: () => fetchContents({
-      contentType: selectedType === 'all' ? null : selectedType,
-      sortBy: 'rating',
-      page: 1,
-      pageSize: 15
-    }),
+    queryFn: () =>
+      fetchContents({
+        contentType: selectedType === 'all' ? null : selectedType,
+        sortBy: 'rating',
+        page: 1,
+        pageSize: 15,
+      }),
     staleTime: 1000 * 60 * 5, // Cache data in memory for 5 minutes
   });
 
@@ -30,11 +32,14 @@ export default function HomePage() {
             <Sparkles className="h-3.5 w-3.5" />
             Next-Gen Entertainment Explorer
           </div>
+
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
             Discover Upcoming Releases, Ratings & Streaming Sources.
           </h1>
+
           <p className="text-sm md:text-base text-brand-muted">
-            Direct redirects to Netflix, Prime Video, and Disney+ Hotstar alongside verified IMDb ratings and complete cast billing.
+            Direct redirects to Netflix, Prime Video, and Disney+ Hotstar
+            alongside verified IMDb ratings and complete cast billing.
           </p>
         </div>
 
@@ -42,11 +47,15 @@ export default function HomePage() {
         <div className="absolute top-0 right-0 -mr-20 -mt-20 h-96 w-96 rounded-full bg-brand-accent/10 blur-3xl pointer-events-none" />
       </section>
 
+      {/* Personalized Recommendations Section */}
+      <RecommendationsRow />
+
       {/* Main Catalog & Filter Toolbar */}
       <section className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-brand-border">
           <div className="flex items-center gap-2">
             <Flame className="h-6 w-6 text-brand-accent" />
+
             <h2 className="text-xl md:text-2xl font-bold text-white tracking-wide">
               Top Ranked Titles
             </h2>
@@ -61,6 +70,7 @@ export default function HomePage() {
             ].map((tab) => {
               const Icon = tab.icon;
               const active = selectedType === tab.id;
+
               return (
                 <button
                   key={tab.id}
@@ -83,9 +93,12 @@ export default function HomePage() {
         {isLoading && <LoadingSkeleton count={10} />}
 
         {isError && (
-          <ErrorState 
-            message={error?.response?.data?.detail || "Could not connect to FastAPI server. Ensure the backend is running."} 
-            onRetry={() => refetch()} 
+          <ErrorState
+            message={
+              error?.response?.data?.detail ||
+              'Could not connect to FastAPI server. Ensure the backend is running.'
+            }
+            onRetry={() => refetch()}
           />
         )}
 

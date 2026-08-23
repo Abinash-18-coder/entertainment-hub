@@ -1,12 +1,22 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.models import Content, Genre, Person, CastCredit, User
 from app.api.v1.api import api_router
+from app.scheduler.setup import start_scheduler, shutdown_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # App Startup: Start background jobs
+    start_scheduler()
+    yield
+    # App Shutdown: Gracefully stop scheduler
+    shutdown_scheduler()
 
 app = FastAPI(
     title="Entertainment Hub API",
-    description="Backend API for movies, series, sitcoms, ratings, and streaming redirects.",
-    version="1.0.0"
+    description="Backend API for movies, series, sitcoms, ratings, recommendations and background sync jobs.",
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 origins = [

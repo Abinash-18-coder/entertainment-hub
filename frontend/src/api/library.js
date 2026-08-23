@@ -24,3 +24,11 @@ export const fetchUserWatched = async () => {
   const response = await apiClient.get('/library/watched');
   return response.data;
 };
+
+/**
+ * Fetch personalized recommendations for the authenticated user
+ */
+export const fetchRecommendations = async () => {
+  const response = await apiClient.get('/library/recommendations');
+  return response.data;
+};

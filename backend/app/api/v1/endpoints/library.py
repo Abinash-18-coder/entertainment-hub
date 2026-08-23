@@ -8,6 +8,7 @@ from app.api.deps import get_current_active_user
 from app.models.user import User
 from app.models.content import Content
 from app.schemas.library import LibraryStatusResponse, LibraryListResponse
+from app.services.recommender import recommender
 from app.schemas.content import ContentListItem
 
 router = APIRouter()
@@ -173,4 +174,25 @@ async def get_user_watched(
     return LibraryListResponse(
         items=user.watched_contents,
         total_count=len(user.watched_contents)
+    )
+
+
+# Add this endpoint to the bottom of library.py:
+@router.get("/recommendations", response_model=LibraryListResponse)
+async def get_personalized_recommendations(
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Retrieve personalized movie and series recommendations for the authenticated user 
+    using rule-based genre/actor overlap and diversity filtering.
+    """
+    recommendations = await recommender.get_user_recommendations(
+        user_id=current_user.id,
+        db=db,
+        limit=15
+    )
+    return LibraryListResponse(
+        items=recommendations,
+        total_count=len(recommendations)
     )
