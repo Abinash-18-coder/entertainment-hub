@@ -1,7 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
+
 import HomePage from './pages/HomePage';
 import UpcomingPage from './pages/UpcomingPage';
 import GenresPage from './pages/GenresPage';
@@ -10,8 +15,7 @@ import LibraryPage from './pages/LibraryPage';
 import DetailPage from './pages/DetailPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-
-import { useAuth } from './context/AuthContext';
+import NotFoundPage from './pages/NotFoundPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,66 +26,56 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protect routes that require authentication
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  // Wait until authentication status is determined
-  if (isLoading) {
-    return null;
-  }
-
-  // If user is not logged in, redirect to login page
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // User is authenticated, so allow access
-  return children;
-}
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
 
-          {/* Public Authentication Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+              {/* Main Application Layout */}
+              <Route path="/" element={<AppLayout />}>
 
-          {/* Main Application Layout */}
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<HomePage />} />
+                {/* Home */}
+                <Route index element={<HomePage />} />
 
-            <Route path="upcoming" element={<UpcomingPage />} />
+                {/* Public Pages */}
+                <Route path="upcoming" element={<UpcomingPage />} />
+                <Route path="genres" element={<GenresPage />} />
+                <Route
+                  path="leaderboards"
+                  element={<LeaderboardsPage />}
+                />
 
-            <Route path="genres" element={<GenresPage />} />
+                {/* Dynamic Detail Page */}
+                <Route
+                  path="content/:id"
+                  element={<DetailPage />}
+                />
 
-            <Route
-              path="leaderboards"
-              element={<LeaderboardsPage />}
-            />
+                {/* Protected Personal Library */}
+                <Route
+                  path="library"
+                  element={
+                    <ProtectedRoute>
+                      <LibraryPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
 
-            {/* Protected Library Route */}
-            <Route
-              path="library"
-              element={
-                <ProtectedRoute>
-                  <LibraryPage />
-                </ProtectedRoute>
-              }
-            />
+              {/* Public Authentication Routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            {/* Dynamic Content Detail Route */}
-            <Route
-              path="content/:id"
-              element={<DetailPage />}
-            />
-          </Route>
+              {/* Catch-all 404 Route */}
+              <Route path="*" element={<NotFoundPage />} />
 
-        </Routes>
-      </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

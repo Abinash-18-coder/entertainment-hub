@@ -7,11 +7,13 @@ import CastGrid from '../components/detail/CastGrid';
 import LibraryActionButtons from '../components/detail/LibraryActionButtons';
 import DetailSkeleton from '../components/detail/DetailSkeleton';
 import ErrorState from '../components/ui/ErrorState';
+import { useToast } from '../context/ToastContext';
 import { Star, Calendar, Film, Tv, ArrowLeft, Share2 } from 'lucide-react';
 import { formatDisplayDate } from '../utils/dateUtils';
 
 export default function DetailPage() {
   const { id } = useParams();
+  const { addToast } = useToast();
 
   // Fetch title details by ID
   const { data: content, isLoading, isError, error, refetch } = useQuery({
@@ -55,13 +57,14 @@ export default function DetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Catalog
         </Link>
+
         <button
           onClick={() => {
             if (navigator.share) {
               navigator.share({ title, url: window.location.href });
             } else {
               navigator.clipboard.writeText(window.location.href);
-              alert('Link copied to clipboard!');
+              addToast('Link copied to clipboard!', 'success');
             }
           }}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-card border border-brand-border text-xs font-medium text-slate-300 hover:text-white transition-all"
@@ -102,7 +105,11 @@ export default function DetailPage() {
             {/* Type & Release Row */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-dark/90 text-[11px] font-bold uppercase tracking-wider text-slate-200 border border-white/10">
-                {content_type === 'movie' ? <Film className="h-3 w-3 text-brand-accent" /> : <Tv className="h-3 w-3 text-blue-400" />}
+                {content_type === 'movie' ? (
+                  <Film className="h-3 w-3 text-brand-accent" />
+                ) : (
+                  <Tv className="h-3 w-3 text-blue-400" />
+                )}
                 {content_type}
               </span>
 
