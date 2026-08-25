@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Text, Date, Float, JSON
+from sqlalchemy import String, Integer, Text, Date, Float, JSON, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import date
 from typing import Optional, List, Any
@@ -14,7 +14,7 @@ class Content(Base):
     
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     overview: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    content_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     
     release_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
     poster_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -29,3 +29,9 @@ class Content(Base):
     
     bookmarked_by_users = relationship("User", secondary=user_bookmarks, back_populates="bookmarked_contents")
     watched_by_users = relationship("User", secondary=user_watched, back_populates="watched_contents")
+
+    # Table Indexes for high-speed filtering and leaderboard sorting
+    __table_args__ = (
+        Index("idx_content_type_rating", "content_type", "imdb_rating"),
+        Index("idx_content_type_release", "content_type", "release_date"),
+    )

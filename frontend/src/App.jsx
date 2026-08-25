@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './context/AuthContext';
@@ -6,25 +7,36 @@ import { ToastProvider } from './context/ToastContext';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
+import LoadingSkeleton from './components/ui/LoadingSkeleton';
 
-import HomePage from './pages/HomePage';
-import UpcomingPage from './pages/UpcomingPage';
-import GenresPage from './pages/GenresPage';
-import LeaderboardsPage from './pages/LeaderboardsPage';
-import LibraryPage from './pages/LibraryPage';
-import DetailPage from './pages/DetailPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import NotFoundPage from './pages/NotFoundPage';
+// Lazy-loaded route chunks for performance code splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const UpcomingPage = lazy(() => import('./pages/UpcomingPage'));
+const GenresPage = lazy(() => import('./pages/GenresPage'));
+const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage'));
+const LibraryPage = lazy(() => import('./pages/LibraryPage'));
+const DetailPage = lazy(() => import('./pages/DetailPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5-minute global cache
       retry: 1,
     },
   },
 });
+
+// Fallback loader for lazy chunks
+const PageLoader = () => (
+  <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="h-44 rounded-3xl bg-brand-card animate-pulse" />
+    <LoadingSkeleton count={10} />
+  </div>
+);
 
 function App() {
   return (
@@ -32,47 +44,68 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <BrowserRouter>
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
 
-              {/* Main Application Layout */}
-              <Route path="/" element={<AppLayout />}>
+                {/* Main Application Layout */}
+                <Route path="/" element={<AppLayout />}>
 
-                {/* Home */}
-                <Route index element={<HomePage />} />
+                  {/* Home */}
+                  <Route index element={<HomePage />} />
 
-                {/* Public Pages */}
-                <Route path="upcoming" element={<UpcomingPage />} />
-                <Route path="genres" element={<GenresPage />} />
-                <Route
-                  path="leaderboards"
-                  element={<LeaderboardsPage />}
-                />
+                  {/* Public Pages */}
+                  <Route
+                    path="upcoming"
+                    element={<UpcomingPage />}
+                  />
 
-                {/* Dynamic Detail Page */}
-                <Route
-                  path="content/:id"
-                  element={<DetailPage />}
-                />
+                  <Route
+                    path="genres"
+                    element={<GenresPage />}
+                  />
 
-                {/* Protected Personal Library */}
-                <Route
-                  path="library"
-                  element={
-                    <ProtectedRoute>
-                      <LibraryPage />
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
+                  <Route
+                    path="leaderboards"
+                    element={<LeaderboardsPage />}
+                  />
 
-              {/* Public Authentication Routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+                  {/* Dynamic Detail Route */}
+                  <Route
+                    path="content/:id"
+                    element={<DetailPage />}
+                  />
 
-              {/* Catch-all 404 Route */}
-              <Route path="*" element={<NotFoundPage />} />
+                  {/* Public Auth Routes */}
+                  <Route
+                    path="login"
+                    element={<LoginPage />}
+                  />
 
-            </Routes>
+                  <Route
+                    path="register"
+                    element={<RegisterPage />}
+                  />
+
+                  {/* Protected Library Route */}
+                  <Route
+                    path="library"
+                    element={
+                      <ProtectedRoute>
+                        <LibraryPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* 404 Catch-All */}
+                  <Route
+                    path="*"
+                    element={<NotFoundPage />}
+                  />
+
+                </Route>
+
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </ToastProvider>
       </AuthProvider>

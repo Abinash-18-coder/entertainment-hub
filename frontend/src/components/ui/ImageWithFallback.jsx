@@ -6,12 +6,28 @@ export default function ImageWithFallback({
   alt,
   type = 'poster', // 'poster' | 'backdrop' | 'person'
   className = '',
-  aspectRatio = 'aspect-[2/3]'
+  aspectRatio = 'aspect-[2/3]',
+  priority = false
 }) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // If no source provided or image fails to load, display clean placeholder
+  // Optimize TMDb image URLs to optimal widths
+  const getOptimizedSrc = (originalUrl) => {
+    if (!originalUrl || !originalUrl.includes('image.tmdb.org')) {
+      return originalUrl;
+    }
+    if (type === 'person') {
+      return originalUrl.replace('/w500/', '/w185/').replace('/original/', '/w185/');
+    }
+    if (type === 'poster') {
+      return originalUrl.replace('/original/', '/w342/');
+    }
+    return originalUrl;
+  };
+
+  const optimizedSrc = getOptimizedSrc(src);
+
   if (!src || hasError) {
     return (
       <div
@@ -34,15 +50,15 @@ export default function ImageWithFallback({
 
   return (
     <div className={`relative overflow-hidden bg-slate-900 ${aspectRatio} ${className}`}>
-      {/* Loading Skeleton underneath while image downloads */}
       {!isLoaded && (
         <div className="absolute inset-0 bg-slate-800 animate-pulse" />
       )}
 
       <img
-        src={src}
+        src={optimizedSrc}
         alt={alt}
-        loading="lazy"
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
         className={`h-full w-full object-cover transition-opacity duration-300 ${
