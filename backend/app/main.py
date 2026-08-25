@@ -2,31 +2,28 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.api import api_router
+from app.core.config import settings
 from app.scheduler.setup import start_scheduler, shutdown_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # App Startup: Start background jobs
+    # App Startup
     start_scheduler()
     yield
-    # App Shutdown: Gracefully stop scheduler
+    # App Shutdown
     shutdown_scheduler()
 
 app = FastAPI(
     title="Entertainment Hub API",
-    description="Backend API for movies, series, sitcoms, ratings, recommendations and background sync jobs.",
+    description="Production API for movies, series, sitcoms, ratings, and streaming redirects.",
     version="1.0.0",
     lifespan=lifespan
 )
 
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
+# Bind dynamic production and local CORS origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,7 +34,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 def read_root():
-    return {"status": "online", "message": "Entertainment Hub API is running"}
+    return {"status": "online", "message": "Entertainment Hub API is running in production"}
 
 @app.get("/api/v1/health")
 def health_check():

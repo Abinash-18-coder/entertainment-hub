@@ -21,6 +21,14 @@ from app.models.associations import content_genres
 # access to the values within the .ini file in use.
 config = context.config
 
+sync_database_url = os.getenv("SYNC_DATABASE_URL")
+
+if sync_database_url:
+    config.set_main_option(
+        "sqlalchemy.url",
+        sync_database_url.replace("%", "%%")
+    )
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
