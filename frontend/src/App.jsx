@@ -7,6 +7,7 @@ import { ToastProvider } from './context/ToastContext';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
+import ScrollToTop from './components/layout/ScrollToTop';
 import LoadingSkeleton from './components/ui/LoadingSkeleton';
 
 // Lazy-loaded route chunks for performance code splitting
@@ -44,6 +45,7 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <Suspense fallback={<PageLoader />}>
               <Routes>
 
