@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Film, Calendar, Flame, Layers, Bookmark, Clapperboard, LogOut, User as UserIcon, Search } from 'lucide-react';
+import { Film, Calendar, Flame, Layers, Bookmark, Clapperboard, LogOut, User as UserIcon, Search, Menu, X } from 'lucide-react';
 
 export default function Navbar({ onOpenSearch }) {
   const { user, isAuthenticated, logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const navLinks = [
@@ -16,6 +18,7 @@ export default function Navbar({ onOpenSearch }) {
 
   const handleLogout = () => {
     logout();
+    setIsMobileMenuOpen(false);
     navigate('/');
   };
 
@@ -24,7 +27,11 @@ export default function Navbar({ onOpenSearch }) {
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
+        <Link 
+          to="/" 
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="flex items-center gap-2.5 group"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-accent shadow-glow transition-transform group-hover:scale-105">
             <Clapperboard className="h-5 w-5 text-white" />
           </div>
@@ -33,7 +40,7 @@ export default function Navbar({ onOpenSearch }) {
           </span>
         </Link>
 
-        {/* Navigation Links */}
+        {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center space-x-1" aria-label="Main Navigation">
           {navLinks.map((link) => {
             const Icon = link.icon;
@@ -57,7 +64,7 @@ export default function Navbar({ onOpenSearch }) {
         </nav>
 
         {/* Right Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Spotlight Search Trigger Button */}
           <button
             onClick={onOpenSearch}
@@ -71,10 +78,10 @@ export default function Navbar({ onOpenSearch }) {
             </kbd>
           </button>
 
-          {/* User Status / Login */}
+          {/* Desktop User Status / Login */}
           {isAuthenticated ? (
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-card border border-brand-border text-xs font-semibold text-slate-200">
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-card border border-brand-border text-xs font-semibold text-slate-200">
                 <UserIcon className="h-3.5 w-3.5 text-brand-accent" />
                 <span className="max-w-32.5 truncate">{user?.email}</span>
               </div>
@@ -86,19 +93,83 @@ export default function Navbar({ onOpenSearch }) {
                 className="flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-red-500/20 hover:text-rose-300 border border-slate-700 hover:border-red-500/30 px-3 py-2 text-xs font-semibold text-slate-300 transition-all"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Log Out</span>
+                <span>Log Out</span>
               </button>
             </div>
           ) : (
             <Link
               to="/login"
-              className="rounded-xl bg-brand-accent px-4 py-2 text-xs font-bold text-white hover:bg-brand-accentHover shadow-glow transition-all"
+              className="hidden sm:inline-flex rounded-xl bg-brand-accent px-4 py-2 text-xs font-bold text-white hover:bg-brand-accentHover shadow-glow transition-all"
             >
               Sign In
             </Link>
           )}
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            aria-label="Toggle navigation menu"
+            className="flex md:hidden items-center justify-center p-2 rounded-xl bg-brand-card hover:bg-slate-800 border border-brand-border text-slate-300 transition-all"
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-slate-300" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Collapsible Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-brand-border/60 bg-brand-dark/95 backdrop-blur-2xl px-4 py-4 space-y-3">
+          <nav className="flex flex-col space-y-1">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <NavLink
+                  key={link.name}
+                  to={link.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-brand-accent/15 text-brand-accent border border-brand-accent/30 font-semibold'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.name}
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          {/* Mobile Auth Controls */}
+          <div className="pt-3 border-t border-brand-border/60 flex flex-col gap-2">
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-400">
+                  <UserIcon className="h-3.5 w-3.5 text-brand-accent" />
+                  <span className="truncate">{user?.email}</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-rose-300 border border-red-500/30 text-xs font-semibold transition-all"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center justify-center w-full rounded-xl bg-brand-accent py-2.5 text-xs font-bold text-white hover:bg-brand-accentHover shadow-glow transition-all"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
