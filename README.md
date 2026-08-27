@@ -34,5 +34,5 @@
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/YOUR_USERNAME/entertainment-hub.git](https://github.com/YOUR_USERNAME/entertainment-hub.git)
+git clone [https://github.com/Abinash-18-coder/entertainment-hub.git](https://github.com/Abinash-18-coder/entertainment-hub.git)
 cd entertainment-hub
