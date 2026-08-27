@@ -1,11 +1,12 @@
-import { Star, ExternalLink, Calendar, Film, Tv } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Star, ExternalLink, Calendar, Film } from 'lucide-react';
 import { motion } from 'framer-motion';
 import RankBadge from './RankBadge';
 
 export default function LeaderboardCard({ content, rank }) {
   const {
+    id,
     title,
-    content_type,
     release_date,
     poster_path,
     imdb_rating,
@@ -29,8 +30,11 @@ export default function LeaderboardCard({ content, rank }) {
         {/* Numerical Rank Badge */}
         <RankBadge rank={rank} />
 
-        {/* Poster Thumbnail */}
-        <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-900 border border-slate-800">
+        {/* Poster Thumbnail (Clickable Link) */}
+        <Link
+          to={`/content/${id}`}
+          className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-900 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+        >
           {poster_path ? (
             <img
               src={poster_path}
@@ -43,13 +47,18 @@ export default function LeaderboardCard({ content, rank }) {
               <Film className="h-5 w-5" />
             </div>
           )}
-        </div>
+        </Link>
 
-        {/* Title, Year, and Genres */}
+        {/* Title (Clickable Link), Year, and Genres */}
         <div className="min-w-0">
-          <h3 className="text-sm md:text-base font-bold text-white group-hover:text-brand-accent transition-colors truncate">
-            {title}
-          </h3>
+          <Link
+            to={`/content/${id}`}
+            className="block focus:outline-none"
+          >
+            <h3 className="text-sm md:text-base font-bold text-white hover:text-brand-accent transition-colors truncate">
+              {title}
+            </h3>
+          </Link>
           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-brand-muted">
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
