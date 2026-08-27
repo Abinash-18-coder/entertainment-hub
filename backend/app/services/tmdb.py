@@ -1,4 +1,5 @@
 import httpx
+from datetime import date, timedelta
 from typing import Dict, Any, List, Optional
 
 from app.core.config import settings
@@ -22,6 +23,11 @@ class TMDBService:
         ):
             self.params["api_key"] = settings.TMDB_API_KEY
 
+        # Force IPv4 to prevent IPv6 timeouts in local environments
+        self.transport = httpx.AsyncHTTPTransport(
+            local_address="0.0.0.0"
+        )
+
     async def get_genres(
         self,
         content_type: str = "movie"
@@ -30,7 +36,7 @@ class TMDBService:
 
         url = f"{self.base_url}/genre/{content_type}/list"
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(transport=self.transport, timeout=15.0) as client:
             response = await client.get(
                 url,
                 headers=self.headers,
@@ -40,22 +46,53 @@ class TMDBService:
             if response.status_code == 200:
                 return response.json().get("genres", [])
 
+            print(
+                f"TMDB GENRE REQUEST FAILED: {response.status_code}"
+            )
+
             return []
 
     async def get_upcoming_movies(
         self,
         page: int = 1
     ) -> List[Dict[str, Any]]:
-        """Fetch movies scheduled to be released soon or in future dates."""
+        """
+        Fetch high-profile upcoming theatrical and streaming movies across the next 6 months.
 
-        url = f"{self.base_url}/movie/upcoming"
+        Uses TMDb's discover endpoint with primary release filtering:
+        - Primary future release dates across a 180-day window
+        - Popularity descending sort to prioritize major studio releases
+        - Release types: 2 (Theatrical Limited), 3 (Theatrical Wide), 4 (Digital Premiere)
+        """
+
+        url = f"{self.base_url}/discover/movie"
+
+        today = date.today()
+        future_date = today + timedelta(days=180)  # Extended 6-month window
 
         params = {
             **self.params,
-            "page": page
+            "page": page,
+            "language": "en-US",
+            "include_adult": "false",
+            "include_video": "false",
+
+            # Sort by anticipated popularity
+            "sort_by": "popularity.desc",
+
+            # Filter by primary original release date to avoid re-releases
+            "primary_release_date.gte": today.isoformat(),
+            "primary_release_date.lte": future_date.isoformat(),
+
+            # 2 = Theatrical (Limited), 3 = Theatrical (Wide), 4 = Digital Premiere
+            "with_release_type": "2|3|4"
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(
+            transport=self.transport,
+            timeout=15.0
+        ) as client:
+
             response = await client.get(
                 url,
                 headers=self.headers,
@@ -63,7 +100,27 @@ class TMDBService:
             )
 
             if response.status_code == 200:
-                return response.json().get("results", [])
+                data = response.json()
+                results = data.get("results", [])
+
+                print(f"🎬 [TMDb Upcoming] Page {page} | Found {len(results)} titles | Date Range: {today} to {future_date}")
+
+                for movie in results:
+                    print(
+                        f"  -> Title: {movie.get('title')} | Release: {movie.get('release_date')} | Popularity: {movie.get('popularity')}"
+                    )
+
+                return results
+
+            print(
+                "❌ TMDB UPCOMING REQUEST FAILED:",
+                response.status_code
+            )
+
+            print(
+                "TMDB RESPONSE:",
+                response.text
+            )
 
             return []
 
@@ -71,16 +128,19 @@ class TMDBService:
         self,
         page: int = 1
     ) -> List[Dict[str, Any]]:
-        """Fetch currently popular movies."""
+        """Fetch popular movies with verified audience volume."""
 
-        url = f"{self.base_url}/movie/popular"
+        url = f"{self.base_url}/discover/movie"
 
         params = {
             **self.params,
-            "page": page
+            "page": page,
+            "language": "en-US",
+            "sort_by": "popularity.desc",
+            "vote_count.gte": "100"  # Exclude zero/low-review titles
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(transport=self.transport, timeout=15.0) as client:
             response = await client.get(
                 url,
                 headers=self.headers,
@@ -89,6 +149,10 @@ class TMDBService:
 
             if response.status_code == 200:
                 return response.json().get("results", [])
+
+            print(
+                f"TMDB POPULAR MOVIES REQUEST FAILED: {response.status_code}"
+            )
 
             return []
 
@@ -96,16 +160,23 @@ class TMDBService:
         self,
         page: int = 1
     ) -> List[Dict[str, Any]]:
-        """Fetch currently popular TV series."""
+        """Fetch popular TV series with verified audience volume."""
 
-        url = f"{self.base_url}/tv/popular"
+        url = f"{self.base_url}/discover/tv"
 
         params = {
             **self.params,
-            "page": page
+            "page": page,
+            "language": "en-US",
+            "sort_by": "popularity.desc",
+            "vote_count.gte": "100"  # Exclude zero/low-review shows
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(
+            transport=self.transport,
+            timeout=15.0
+        ) as client:
+
             response = await client.get(
                 url,
                 headers=self.headers,
@@ -114,6 +185,10 @@ class TMDBService:
 
             if response.status_code == 200:
                 return response.json().get("results", [])
+
+            print(
+                f"TMDB POPULAR SERIES REQUEST FAILED: {response.status_code}"
+            )
 
             return []
 
@@ -134,7 +209,7 @@ class TMDBService:
             "page": page
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(transport=self.transport, timeout=15.0) as client:
             response = await client.get(
                 url,
                 headers=self.headers,
@@ -143,6 +218,10 @@ class TMDBService:
 
             if response.status_code == 200:
                 return response.json().get("results", [])
+
+            print(
+                f"TMDB SITCOM REQUEST FAILED: {response.status_code}"
+            )
 
             return []
 
@@ -158,14 +237,6 @@ class TMDBService:
         - Watch providers
         """
 
-        # Our database/application uses:
-        # "movie" for movies
-        # "series" for TV series
-        #
-        # TMDb uses:
-        # "movie" for movies
-        # "tv" for TV series
-
         endpoint_type = (
             "movie"
             if content_type == "movie"
@@ -179,7 +250,7 @@ class TMDBService:
             "append_to_response": "external_ids,credits,watch/providers"
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(transport=self.transport, timeout=15.0) as client:
             response = await client.get(
                 url,
                 headers=self.headers,
@@ -190,18 +261,11 @@ class TMDBService:
                 return response.json()
 
             print(
-                f"❌ TMDb details request failed: "
-                f"{response.status_code} | {url}"
+                f"❌ TMDb details request failed: {response.status_code} | {url}"
             )
 
             return None
 
 
-# IMPORTANT:
-# Create the service object so other files can import it using:
-# from app.services.tmdb import tmdb_service
-
+# Global service instance export
 tmdb_service = TMDBService()
-
-
-

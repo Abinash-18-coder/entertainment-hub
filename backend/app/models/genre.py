@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.associations import content_genres
 
+
 class Genre(Base):
     __tablename__ = "genres"
 
@@ -11,4 +12,9 @@ class Genre(Base):
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
     # Relationship back to Content items
-    contents = relationship("Content", secondary=content_genres, back_populates="genres")
+    contents = relationship(
+        "Content",
+        secondary=content_genres,
+        back_populates="genres",
+        lazy="selectin"
+    )

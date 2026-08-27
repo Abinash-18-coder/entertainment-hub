@@ -7,13 +7,13 @@ import MonthNav from '../components/upcoming/MonthNav';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
-import { Calendar, Film, Tv, Smile, Sparkles, Filter } from 'lucide-react';
+import { Calendar, Film, Tv, Smile, Sparkles } from 'lucide-react';
 
 export default function UpcomingPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [activeMonth, setActiveMonth] = useState(null);
 
-  // Fetch upcoming contents chronologically (sort_by = date_asc)
+  // Fetch upcoming contents chronologically across all months
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['contents', 'upcoming', selectedType],
     queryFn: () => fetchContents({
@@ -21,12 +21,12 @@ export default function UpcomingPage() {
       upcomingOnly: true,
       sortBy: 'date_asc',
       page: 1,
-      pageSize: 50
+      pageSize: 100 // Loads full timeline across all upcoming months
     }),
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
-  // Filter for sitcoms client-side if Sitcoms tab is clicked (TV show with Comedy genre)
+  // Client-side sitcom filter (TV Series with Comedy genre)
   const filteredItems = useMemo(() => {
     if (!data?.items) return [];
     if (selectedType === 'sitcom') {
@@ -42,7 +42,7 @@ export default function UpcomingPage() {
     return groupContentByMonth(filteredItems);
   }, [filteredItems]);
 
-  // Smooth scroll handler for quick month jumper
+  // Smooth scroll handler for month navigation ribbon
   const handleScrollToMonth = (monthTitle) => {
     setActiveMonth(monthTitle);
     const elementId = `month-${monthTitle.replace(/\s+/g, '-').toLowerCase()}`;
@@ -54,7 +54,7 @@ export default function UpcomingPage() {
 
   return (
     <div className="space-y-8 pb-16">
-      {/* Top Hero Section */}
+      {/* Hero Header Section */}
       <section className="relative overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-brand-card to-slate-950 p-8 md:p-12 border border-brand-border shadow-2xl">
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full bg-brand-accent/10 border border-brand-accent/30 px-3.5 py-1 text-xs font-bold text-brand-accent">
@@ -65,14 +65,13 @@ export default function UpcomingPage() {
             Upcoming Movies, Series & Sitcoms
           </h1>
           <p className="text-sm md:text-base text-brand-muted">
-            Track exact theatrical and streaming premiere dates, live countdowns, and upcoming premieres across platforms.
+            Track exact theatrical and digital premiere dates, live countdowns, and upcoming releases across platforms.
           </p>
         </div>
       </section>
 
-      {/* Filter Control Bar */}
+      {/* Filter Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
-        {/* Type Filter Buttons */}
         <div className="flex flex-wrap items-center bg-brand-card p-1.5 rounded-2xl border border-brand-border">
           {[
             { id: 'all', label: 'All Releases', icon: Sparkles },
@@ -102,7 +101,6 @@ export default function UpcomingPage() {
           })}
         </div>
 
-        {/* Count Indicator */}
         <div className="text-xs font-medium text-brand-muted px-2">
           Found <span className="text-white font-bold">{filteredItems.length}</span> upcoming titles
         </div>
@@ -115,7 +113,7 @@ export default function UpcomingPage() {
         onSelectMonth={handleScrollToMonth}
       />
 
-      {/* Main Content Render Area */}
+      {/* Main Content Area */}
       {isLoading && <LoadingSkeleton count={6} />}
 
       {isError && (

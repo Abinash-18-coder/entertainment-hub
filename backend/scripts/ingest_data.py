@@ -36,7 +36,7 @@ def extract_watch_providers(providers_data: Dict[str, Any]) -> Dict[str, Any]:
     region_data = results.get("IN") or results.get("US") or {}
     
     link = region_data.get("link", "")
-    flatrate = region_data.get("flatrate", []) # Subscription streaming platforms
+    flatrate = region_data.get("flatrate", [])  # Subscription streaming platforms
     
     providers_list = []
     for provider in flatrate:
@@ -75,6 +75,13 @@ async def process_and_save_item(item_summary: Dict[str, Any], content_type: str)
     """Fetches details, credits, ratings, and saves a single movie or series to PostgreSQL."""
     tmdb_id = item_summary["id"]
     
+    # 1. Filter out obscure / low-profile titles and missing posters
+    popularity = item_summary.get("popularity", 0)
+    has_poster = bool(item_summary.get("poster_path"))
+    
+    if content_type == "movie" and (popularity < 15.0 or not has_poster):
+        return
+
     async with SEMAPHORE:
         # Rate-limiting micro-delay (prevents hitting the 40 requests/10-sec limit)
         await asyncio.sleep(0.25)
@@ -95,14 +102,21 @@ async def process_and_save_item(item_summary: Dict[str, Any], content_type: str)
     external_ids = details.get("external_ids", {})
     imdb_id = external_ids.get("imdb_id")
     
-    # Fetch accurate IMDb rating from OMDb
+    # 2. Fetch accurate IMDb rating from OMDb with minimum vote protection
     imdb_rating = None
     if imdb_id:
         imdb_rating = await omdb_service.get_imdb_rating(imdb_id)
+    
     if imdb_rating is None:
-        # Fallback to TMDb vote_average if OMDb rating is unavailable
+        # Fallback to TMDb only if it has a statistically significant vote count (>= 200 votes)
         raw_vote = details.get("vote_average")
-        imdb_rating = round(raw_vote, 1) if raw_vote else None
+        vote_count = details.get("vote_count", 0)
+        
+        # Guard against 1-vote "10.0" ratings on obscure/upcoming titles
+        if raw_vote and vote_count >= 200:
+            imdb_rating = round(raw_vote, 1)
+        else:
+            imdb_rating = None  # Stored as unrated (NR / TBA)
 
     # Extract Streaming Providers & Direct Links
     watch_providers = extract_watch_providers(details.get("watch/providers", {}))
@@ -110,7 +124,6 @@ async def process_and_save_item(item_summary: Dict[str, Any], content_type: str)
     async with AsyncSessionLocal() as session:
         # Check if content already exists
         stmt = (
-
             select(Content)
             .options(selectinload(Content.genres))
             .where(Content.tmdb_id == tmdb_id)
@@ -135,23 +148,25 @@ async def process_and_save_item(item_summary: Dict[str, Any], content_type: str)
             await session.flush()
         else:
             # Update existing record
+            content.title = title
+            content.overview = overview
+            content.release_date = release_date
+            content.poster_path = poster_path
+            content.backdrop_path = backdrop_path
             content.imdb_rating = imdb_rating
             content.watch_providers = watch_providers
 
         # Map Genres
         item_genres = details.get("genres", [])
-
-        # Explicitly load the genres relationship before accessing it.
         await session.refresh(content, attribute_names=["genres"])
         for g_data in item_genres:
-
             g_stmt = select(Genre).where(Genre.tmdb_id == g_data["id"])
             g_res = await session.execute(g_stmt)
             genre_obj = g_res.scalar_one_or_none()
 
-            if genre_obj:
-                if genre_obj not in content.genres:
-                    content.genres.append(genre_obj)
+            if genre_obj and genre_obj not in content.genres:
+                content.genres.append(genre_obj)
+
         # Map Top 5 Cast Members
         cast_list = details.get("credits", {}).get("cast", [])[:5]
         for index, actor_data in enumerate(cast_list):
@@ -190,7 +205,7 @@ async def process_and_save_item(item_summary: Dict[str, Any], content_type: str)
                 session.add(credit)
 
         await session.commit()
-        print(f"  🍿 Processed: {title} ({content_type}) | IMDb: {imdb_rating} ⭐")
+        print(f"  🍿 Processed: {title} ({content_type}) | Release: {release_date} | IMDb: {imdb_rating or 'NR'} ⭐")
 
 async def run_ingestion():
     print("=====================================================")
@@ -200,9 +215,9 @@ async def run_ingestion():
     # Step 1: Sync Genres
     await sync_genres()
     
-    # Step 2: Ingest Upcoming Movies (Pages 1 to 3 ~ 60 titles)
-    print("\n📅 Ingesting Upcoming Movies...")
-    for page in range(1, 4):
+    # Step 2: Ingest Upcoming Movies (Pages 1 to 6 ~ 120 high-profile future titles)
+    print("\n📅 Ingesting Top Anticipated Upcoming Movies (Next 6 Months)...")
+    for page in range(1, 7):
         items = await tmdb_service.get_upcoming_movies(page=page)
         for item in items:
             await process_and_save_item(item, "movie")

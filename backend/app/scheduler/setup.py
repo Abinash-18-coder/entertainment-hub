@@ -4,7 +4,15 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.scheduler.jobs import refresh_upcoming_releases_job, refresh_imdb_ratings_job
 
 logger = logging.getLogger("cineverse.scheduler")
-scheduler = AsyncIOScheduler()
+
+# Configure scheduler defaults to prevent missed job warnings
+job_defaults = {
+    'coalesce': True,               # Roll multiple missed executions into one
+    'misfire_grace_time': 3600,     # Allow 1 hour grace time if system sleeps
+    'max_instances': 1
+}
+
+scheduler = AsyncIOScheduler(job_defaults=job_defaults)
 
 def start_scheduler():
     """Configures and starts the background job scheduler."""
